@@ -86,7 +86,10 @@ const PRESETS: Record<string, AuroraLayer[]> = {
                 <label>Presets</label>
                 <div class="presets">
                   @for (preset of presetKeys; track preset) {
-                    <button (click)="loadPreset(preset)">{{ preset }}</button>
+                    <button 
+                      [class.active]="activePreset() === preset"
+                      (click)="loadPreset(preset)"
+                    >{{ preset }}</button>
                   }
                 </div>
               </div>
@@ -284,6 +287,12 @@ const PRESETS: Record<string, AuroraLayer[]> = {
       transform: translateY(-1px);
     }
 
+    button.active {
+      background: rgba(126, 255, 245, 0.3);
+      border-color: rgba(126, 255, 245, 0.6);
+      color: #7efff5;
+    }
+
     .divider {
       border: 0;
       height: 1px;
@@ -404,6 +413,7 @@ export class App {
   auroraLayers = signal<AuroraLayer[]>(structuredClone(DEFAULT_LAYERS));
   auraSize = signal<number>(200);
   auraSpeed = signal<number>(15);
+  activePreset = signal<string | null>('northern-lights');
   
   auraSizeString = computed(() => `${this.auraSize()}%`);
   auraSpeedString = computed(() => `${this.auraSpeed()}s`);
@@ -422,10 +432,12 @@ export class App {
   loadPreset(name: string) {
     if (PRESETS[name]) {
       this.auroraLayers.set(structuredClone(PRESETS[name]));
+      this.activePreset.set(name);
     }
   }
 
   addLayer() {
+    this.activePreset.set(null);
     this.auroraLayers.update(layers => [
       ...layers,
       { 
@@ -439,6 +451,7 @@ export class App {
   }
 
   removeLayer(index: number) {
+    this.activePreset.set(null);
     this.auroraLayers.update(layers => layers.filter((_, i) => i !== index));
   }
 
