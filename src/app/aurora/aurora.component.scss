@@ -1,0 +1,47 @@
+.aurora-container {
+  --aura-1: var(--color-1, #7efff5);
+  --aura-2: var(--color-2, #7a5fff);
+  --aura-3: var(--color-3, #ff6b6b);
+  --aura-4: var(--color-4, #181818); // Default to dark for the base
+
+  // Using the host element or a specific container
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  background: #181818;
+  // Text color isn't strictly needed on the background itself, but we'll keep it for inheritance
+  color: white;
+  
+  // The magic animation
+  animation: aura var(--aura-speed, 15s) linear infinite;
+  
+  // The gradients
+  background-size: var(--aura-size, 200%) var(--aura-size, 200%);
+  background-image:
+    radial-gradient(transparent 0, transparent 20%),
+    radial-gradient(at 62% 9%, var(--aura-1) 0px, transparent 50%),
+    radial-gradient(at 69% 60%, var(--aura-2) 0px, transparent 50%),
+    radial-gradient(at 24% 89%, var(--aura-3) 0px, transparent 50%),
+    radial-gradient(at 51% 77%, var(--aura-4) 0px, transparent 50%),
+    radial-gradient(at 78% 92%, var(--aura-1) 0px, transparent 50%);
+}
+
+// Global keyframes (since we use ViewEncapsulation.None, this ends up global anyway)
+@keyframes aura {
+  0% {
+    background-position: center, 50% 50%, 30% 100%, 100% 10%, 23% 23%, 0% 80%;
+  }
+  33.333% {
+    background-position: center, 10% 75%, 40% 80%, 60% 20%, 43% 23%, 16% 30%;
+  }
+  66.666% {
+    background-position: center, 25% 35%, 80% 50%, 10% 10%, 66% 5%, 30% 0%;
+  }
+  100% {
+    background-position: center, 50% 50%, 30% 100%, 100% 10%, 23% 23%, 0% 80%;
+  }
+}
