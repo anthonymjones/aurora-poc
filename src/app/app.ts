@@ -2,6 +2,7 @@ import { Component, signal, computed, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuroraComponent, AuroraLayer } from './aurora/aurora.component';
+import JSZip from 'jszip';
 
 const DEFAULT_LAYERS: AuroraLayer[] = [
   { color: '#7efff5', x: 62, y: 9, spread: 50, opacity: 0.8 },
@@ -88,6 +89,10 @@ const PRESETS: Record<string, AuroraLayer[]> = {
                     <button (click)="loadPreset(preset)">{{ preset }}</button>
                   }
                 </div>
+              </div>
+
+              <div class="export-row">
+                <button class="export-btn" (click)="exportZip()">📦 Export ZIP</button>
               </div>
             </div>
           </div>
@@ -371,6 +376,25 @@ const PRESETS: Record<string, AuroraLayer[]> = {
       padding: 0.3rem 0.8rem;
       width: auto;
     }
+
+    .export-row {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .export-btn {
+      width: 100%;
+      background: rgba(126, 255, 245, 0.15);
+      border-color: rgba(126, 255, 245, 0.3);
+      color: #7efff5;
+      font-size: 1rem;
+      padding: 0.75rem 1.5rem;
+    }
+
+    .export-btn:hover {
+      background: rgba(126, 255, 245, 0.25);
+    }
   `]
 })
 export class App {
@@ -413,5 +437,113 @@ export class App {
 
   removeLayer(index: number) {
     this.auroraLayers.update(layers => layers.filter((_, i) => i !== index));
+  }
+
+  async exportZip() {
+    const layers = this.auroraLayers();
+    const size = this.auraSizeString();
+    const speed = this.auraSpeedString();
+
+    const gradients = layers.map(layer => {
+      const colorWithOpacity = `color-mix(in srgb, ${layer.color} ${Math.round(layer.opacity * 100)}%, transparent)`;
+      return `    radial-gradient(at ${layer.x}% ${layer.y}%, ${colorWithOpacity} 0px, transparent ${layer.spread}%)`;
+    });
+
+    const keyframeSteps = [0, 33.333, 66.666, 100].map(step => {
+      const positions = ['center'];
+      layers.forEach((layer, index) => {
+        let x = layer.x;
+        let y = layer.y;
+        if (step !== 0 && step !== 100) {
+          const seed = index * 137.5;
+          const phase = (step / 100) * Math.PI * 2;
+          x = (layer.x + Math.sin(phase + seed) * 20 + 100) % 100;
+          y = (layer.y + Math.cos(phase + seed) * 20 + 100) % 100;
+        }
+        positions.push(`${x.toFixed(1)}% ${y.toFixed(1)}%`);
+      });
+      return `  ${step}% { background-position: ${positions.join(', ')}; }`;
+    }).join('\n');
+
+    const css = `/* Aurora Background - Generated from Aurora POC */
+:root {
+  --aura-size: ${size};
+  --aura-speed: ${speed};
+}
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background-color: #0d0d0d;
+  z-index: -1;
+}
+
+.aurora::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  background-image:
+    radial-gradient(transparent 0, transparent 20%),
+${gradients.join(',\n')};
+  background-size: var(--aura-size) var(--aura-size);
+  animation: aura-move var(--aura-speed) ease infinite;
+  filter: blur(60px) saturate(150%);
+}
+
+@keyframes aura-move {
+${keyframeSteps}
+}
+`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora Background</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="aurora"></div>
+  <main style="position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <h1 style="color: white; font-family: system-ui; font-size: 4rem; font-weight: 100;">Your Content Here</h1>
+  </main>
+</body>
+</html>
+`;
+
+    const readme = `# Aurora Background
+
+Generated from Aurora POC (https://anthonymjones.github.io/aurora-poc/)
+
+## Usage
+
+1. Include styles.css in your project
+2. Add a <div class="aurora"></div> element to your HTML
+3. Place your content after the aurora div with position: relative; z-index: 1;
+
+## Customization
+
+- --aura-size: Controls the size of the gradient (default: ${size})
+- --aura-speed: Controls animation speed (default: ${speed})
+
+## Browser Support
+
+Works in all modern browsers. Uses CSS color-mix() which requires Chrome 111+, Firefox 113+, Safari 16.4+.
+`;
+
+    const zip = new JSZip();
+    zip.file('index.html', html);
+    zip.file('styles.css', css);
+    zip.file('README.md', readme);
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'aurora-background.zip';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
