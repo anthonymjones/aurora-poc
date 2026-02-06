@@ -465,17 +465,16 @@ export class App {
       return `    radial-gradient(at ${layer.x}% ${layer.y}%, ${colorWithOpacity} 0px, transparent ${layer.spread}%)`;
     });
 
-    const keyframeSteps = [0, 33.333, 66.666, 100].map(step => {
+    const keyframeSteps = [0, 25, 50, 75, 100].map(step => {
       const positions = ['center'];
       layers.forEach((layer, index) => {
-        let x = layer.x;
-        let y = layer.y;
-        if (step !== 0 && step !== 100) {
-          const seed = index * 137.5;
-          const phase = (step / 100) * Math.PI * 2;
-          x = (layer.x + Math.sin(phase + seed) * 20 + 100) % 100;
-          y = (layer.y + Math.cos(phase + seed) * 20 + 100) % 100;
-        }
+        const driftRadius = 15;
+        const phase = (step / 100) * Math.PI * 2;
+        const layerOffset = (index / layers.length) * Math.PI * 2;
+        
+        const x = Math.max(0, Math.min(100, layer.x + Math.cos(phase + layerOffset) * driftRadius));
+        const y = Math.max(0, Math.min(100, layer.y + Math.sin(phase + layerOffset) * driftRadius));
+        
         positions.push(`${x.toFixed(1)}% ${y.toFixed(1)}%`);
       });
       return `  ${step}% { background-position: ${positions.join(', ')}; }`;

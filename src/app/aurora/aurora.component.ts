@@ -64,25 +64,20 @@ export class AuroraComponent {
       this.renderer.appendChild(this.doc.head, this.styleElement);
     }
 
-    const steps = [0, 33.333, 66.666, 100];
+    const steps = [0, 25, 50, 75, 100];
     const keyframeContent = steps.map(step => {
       const positions = ['center']; 
       
       layers.forEach((layer, index) => {
-        let x = layer.x;
-        let y = layer.y;
-
-        if (step !== 0 && step !== 100) {
-            const seed = index * 137.5; 
-            const driftRange = 20; 
-            
-            const phase = (step / 100) * Math.PI * 2;
-            const xDrift = Math.sin(phase + seed) * driftRange;
-            const yDrift = Math.cos(phase + seed) * driftRange;
-            
-            x = (layer.x + xDrift + 100) % 100; 
-            y = (layer.y + yDrift + 100) % 100;
-        }
+        const driftRadius = 15;
+        const phase = (step / 100) * Math.PI * 2;
+        const layerOffset = (index / layers.length) * Math.PI * 2;
+        
+        const xDrift = Math.cos(phase + layerOffset) * driftRadius;
+        const yDrift = Math.sin(phase + layerOffset) * driftRadius;
+        
+        const x = Math.max(0, Math.min(100, layer.x + xDrift));
+        const y = Math.max(0, Math.min(100, layer.y + yDrift));
         
         positions.push(`${x.toFixed(1)}% ${y.toFixed(1)}%`);
       });
