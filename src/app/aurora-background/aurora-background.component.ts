@@ -3,8 +3,13 @@ import {
   ChangeDetectionStrategy,
   input,
   computed,
+  effect,
   ViewEncapsulation,
+  Renderer2,
+  inject,
+  DestroyRef,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 
 /**
  * Preset color palettes for the aurora effect.
@@ -252,6 +257,10 @@ const PRESETS: Record<AuroraPreset, AuroraLayer[]> = {
   },
 })
 export class AuroraBackgroundComponent {
+  private readonly renderer = inject(Renderer2);
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly preset = input<AuroraPreset>('northern-lights');
 
   readonly layers = input<AuroraLayer[] | undefined>(undefined);
@@ -330,6 +339,19 @@ export class AuroraBackgroundComponent {
   protected readonly hostStyles = computed(() => {
     return `--aurora-bg-color: ${this.backgroundColor()}; --aurora-intensity: ${this.intensity()};`;
   });
+
+  constructor() {
+    effect((onCleanup) => {
+      const styleContent = this.keyframesStyle();
+      const styleEl = this.renderer.createElement('style');
+      this.renderer.setProperty(styleEl, 'textContent', styleContent);
+      this.renderer.appendChild(this.document.head, styleEl);
+
+      onCleanup(() => {
+        this.renderer.removeChild(this.document.head, styleEl);
+      });
+    });
+  }
 
   private _layerPositions(targetIndex: number, x: number, y: number): string {
     return this.resolvedLayers()
