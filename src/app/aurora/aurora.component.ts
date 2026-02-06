@@ -1,16 +1,13 @@
-import { Component, ViewEncapsulation, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ViewEncapsulation, input } from '@angular/core';
 
 @Component({
   selector: 'app-aurora',
   standalone: true,
-  imports: [CommonModule],
-  template: `<div class="aurora-container">
-    <ng-content></ng-content>
-  </div>`,
+  template: `<ng-content />`,
   styleUrls: ['./aurora.component.scss'],
   encapsulation: ViewEncapsulation.None,
   host: {
+    'class': 'aurora',
     '[style.--color-1]': 'color1()',
     '[style.--color-2]': 'color2()',
     '[style.--color-3]': 'color3()',
