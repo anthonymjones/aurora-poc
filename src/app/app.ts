@@ -474,24 +474,26 @@ export class App {
   --aura-speed: ${speed};
 }
 
-.aurora {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
+body {
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
   background-color: #0d0d0d;
-  z-index: -1;
+  overflow-x: hidden;
 }
 
-.aurora::after {
+body::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: -10px;
+  z-index: -1;
   background-image:
     radial-gradient(transparent 0, transparent 20%),
 ${gradients.join(',\n')};
   background-size: var(--aura-size) var(--aura-size);
   animation: aura-move var(--aura-speed) ease infinite;
   filter: blur(60px) saturate(150%);
+  pointer-events: none;
 }
 
 @keyframes aura-move {
@@ -508,8 +510,7 @@ ${keyframeSteps}
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="aurora"></div>
-  <main style="position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+  <main style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
     <h1 style="color: white; font-family: system-ui; font-size: 4rem; font-weight: 100;">Your Content Here</h1>
   </main>
 </body>
@@ -523,8 +524,8 @@ Generated from Aurora POC (https://anthonymjones.github.io/aurora-poc/)
 ## Usage
 
 1. Include styles.css in your project
-2. Add a <div class="aurora"></div> element to your HTML
-3. Place your content after the aurora div with position: relative; z-index: 1;
+2. The aurora effect is applied to the body element via ::before pseudo-element
+3. Your content renders normally on top - no wrapper div needed
 
 ## Customization
 
