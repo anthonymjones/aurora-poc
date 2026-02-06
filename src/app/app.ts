@@ -1,23 +1,36 @@
 import { Component, signal, computed, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuroraComponent } from './aurora/aurora.component';
+import { AuroraComponent, AuroraLayer } from './aurora/aurora.component';
 
-interface GlowElement {
-  id: number;
-  text: string;
-  fontSize: number;
-  color: string;
-  intensity: number;
-  distance: number;
-  speed: number;
-}
+const DEFAULT_LAYERS: AuroraLayer[] = [
+  { color: '#7efff5', x: 62, y: 9, spread: 50, opacity: 0.8 },
+  { color: '#7a5fff', x: 69, y: 60, spread: 50, opacity: 0.8 },
+  { color: '#ff6b6b', x: 24, y: 89, spread: 50, opacity: 0.8 },
+  { color: '#181818', x: 51, y: 77, spread: 50, opacity: 0.6 },
+  { color: '#7efff5', x: 78, y: 92, spread: 50, opacity: 0.8 },
+];
 
-const PRESETS: Record<string, string[]> = {
-  'northern-lights': ['#7efff5', '#7a5fff', '#ff6b6b', '#181818'],
-  'cosmic': ['#ff00cc', '#3333ff', '#00ccff', '#000033'],
-  'ocean': ['#00ffff', '#0099ff', '#0000ff', '#000033'],
-  'sunset': ['#ffcc00', '#ff6600', '#cc0066', '#330033'],
+const PRESETS: Record<string, AuroraLayer[]> = {
+  'northern-lights': DEFAULT_LAYERS,
+  'cosmic': [
+    { color: '#ff00cc', x: 20, y: 20, spread: 60, opacity: 0.8 },
+    { color: '#3333ff', x: 80, y: 80, spread: 60, opacity: 0.8 },
+    { color: '#00ccff', x: 50, y: 50, spread: 40, opacity: 0.9 },
+    { color: '#000033', x: 10, y: 90, spread: 70, opacity: 0.7 },
+  ],
+  'ocean': [
+    { color: '#00ffff', x: 30, y: 30, spread: 50, opacity: 0.8 },
+    { color: '#0099ff', x: 70, y: 70, spread: 50, opacity: 0.8 },
+    { color: '#0000ff', x: 50, y: 10, spread: 60, opacity: 0.8 },
+    { color: '#000033', x: 90, y: 90, spread: 80, opacity: 0.6 },
+  ],
+  'sunset': [
+    { color: '#ffcc00', x: 20, y: 80, spread: 50, opacity: 0.9 },
+    { color: '#ff6600', x: 80, y: 20, spread: 50, opacity: 0.8 },
+    { color: '#cc0066', x: 50, y: 50, spread: 60, opacity: 0.8 },
+    { color: '#330033', x: 10, y: 10, spread: 70, opacity: 0.7 },
+  ],
 };
 
 @Component({
@@ -27,26 +40,17 @@ const PRESETS: Record<string, string[]> = {
   encapsulation: ViewEncapsulation.None,
   template: `
     <app-aurora
-      [color1]="colors()[0]"
-      [color2]="colors()[1]"
-      [color3]="colors()[2]"
-      [color4]="colors()[3]"
+      [layers]="auroraLayers()"
       [size]="auraSizeString()"
       [speed]="auraSpeedString()"
     >
       <div class="playground-layout">
-        <!-- Hero / Glow Elements Area -->
+        <!-- Hero Area -->
         <div class="glow-stage">
-          @for (element of glowElements(); track element.id) {
-            <div 
-              class="glow-text"
-              [style.font-size.rem]="element.fontSize"
-              [style.color]="'white'"
-              [style.text-shadow]="generateTextShadow(element)"
-            >
-              {{ element.text }}
-            </div>
-          }
+           <div class="hero-text">
+             <h1 [style.text-shadow]="heroShadow()">Aura</h1>
+             <p>an experiment in animating color</p>
+           </div>
         </div>
 
         <!-- Controls -->
@@ -63,7 +67,7 @@ const PRESETS: Record<string, string[]> = {
               
               <div class="input-row">
                 <label>Speed ({{ auraSpeed() }}s)</label>
-                <input type="range" min="5" max="30" step="1" 
+                <input type="range" min="5" max="60" step="1" 
                   [ngModel]="auraSpeed()" 
                   (ngModelChange)="auraSpeed.set($event)"
                 >
@@ -76,60 +80,61 @@ const PRESETS: Record<string, string[]> = {
                   (ngModelChange)="auraSize.set($event)"
                 >
               </div>
-            </div>
 
-            <!-- Color Palette -->
-            <div class="control-group">
-              <h3>Palette</h3>
-              <div class="color-pickers">
-                @for (color of colors(); track $index) {
-                  <input type="color" 
-                    [ngModel]="color" 
-                    (ngModelChange)="updateColor($index, $event)"
-                  >
-                }
-              </div>
-              <div class="presets">
-                @for (preset of presetKeys; track preset) {
-                  <button (click)="loadPreset(preset)">{{ preset }}</button>
-                }
+              <div class="presets-row">
+                <label>Presets</label>
+                <div class="presets">
+                  @for (preset of presetKeys; track preset) {
+                    <button (click)="loadPreset(preset)">{{ preset }}</button>
+                  }
+                </div>
               </div>
             </div>
           </div>
 
           <hr class="divider">
 
-          <!-- Glow Elements Management -->
+          <!-- Aurora Layers Management -->
           <div class="elements-section">
             <div class="section-header">
-              <h3>Glow Elements</h3>
-              <button class="add-btn" (click)="addElement()">+ Add Element</button>
+              <h3>Aurora Layers</h3>
+              <button class="add-btn" (click)="addLayer()">+ Add Layer</button>
             </div>
 
             <div class="elements-list">
-              @for (el of glowElements(); track el.id) {
+              @for (layer of auroraLayers(); track $index) {
                 <div class="element-row">
-                  <div class="element-inputs">
-                    <input type="text" [(ngModel)]="el.text" placeholder="Text">
-                    <input type="color" [(ngModel)]="el.color" title="Glow Color">
+                  <div class="layer-header">
+                    <span class="layer-title">
+                      <span class="color-dot" [style.background-color]="layer.color"></span>
+                      Layer {{ $index + 1 }}
+                    </span>
+                    <button class="remove-btn" (click)="removeLayer($index)">Remove</button>
                   </div>
                   
-                  <div class="sliders-grid">
-                    <div class="slider-control">
-                      <label>Size: {{ el.fontSize }}rem</label>
-                      <input type="range" min="1" max="10" step="0.5" [(ngModel)]="el.fontSize">
+                  <div class="layer-controls">
+                    <div class="control-item color-control">
+                       <label>Color</label>
+                       <input type="color" [(ngModel)]="layer.color">
                     </div>
-                    <div class="slider-control">
-                      <label>Intensity: {{ el.intensity }}ch</label>
-                      <input type="range" min="0" max="8" step="0.1" [(ngModel)]="el.intensity">
+
+                    <div class="control-item slider-control">
+                      <label>X Pos: {{ layer.x }}%</label>
+                      <input type="range" min="0" max="100" step="1" [(ngModel)]="layer.x">
                     </div>
-                    <div class="slider-control">
-                      <label>Spread: {{ el.distance }}ch</label>
-                      <input type="range" min="0" max="12" step="0.5" [(ngModel)]="el.distance">
+                    <div class="control-item slider-control">
+                      <label>Y Pos: {{ layer.y }}%</label>
+                      <input type="range" min="0" max="100" step="1" [(ngModel)]="layer.y">
+                    </div>
+                    <div class="control-item slider-control">
+                      <label>Spread: {{ layer.spread }}%</label>
+                      <input type="range" min="10" max="90" step="5" [(ngModel)]="layer.spread">
+                    </div>
+                    <div class="control-item slider-control">
+                      <label>Opacity: {{ layer.opacity }}</label>
+                      <input type="range" min="0" max="1" step="0.05" [(ngModel)]="layer.opacity">
                     </div>
                   </div>
-
-                  <button class="remove-btn" (click)="removeElement(el.id)">Remove</button>
                 </div>
               }
             </div>
@@ -153,16 +158,32 @@ const PRESETS: Record<string, string[]> = {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1rem;
       min-height: 40vh;
       text-align: center;
+      pointer-events: none; /* Let clicks pass through to aurora if needed, though inputs need pointer-events auto */
     }
 
-    .glow-text {
-      font-weight: 100;
-      transition: all 0.3s ease;
-      cursor: default;
+    .hero-text {
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       user-select: none;
+    }
+    
+    .hero-text h1 {
+      font-size: 8rem;
+      font-weight: 100;
+      margin: 0;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    .hero-text p {
+      font-size: 1.5rem;
+      font-weight: 200;
+      opacity: 0.8;
+      margin: 1rem 0 0;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
     }
 
     /* Glassmorphism Card */
@@ -178,6 +199,7 @@ const PRESETS: Record<string, string[]> = {
       width: 100%;
       margin: 0 auto;
       box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      pointer-events: auto;
     }
 
     .controls-header {
@@ -190,7 +212,7 @@ const PRESETS: Record<string, string[]> = {
 
     .controls-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 2rem;
       margin-bottom: 2rem;
     }
@@ -218,23 +240,18 @@ const PRESETS: Record<string, string[]> = {
 
     input[type="range"] {
       width: 100%;
-      accent-color: var(--aura-1, cyan);
+      accent-color: #7efff5;
     }
 
-    .color-pickers {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+    .presets-row {
+       margin-top: 1rem;
     }
 
-    input[type="color"] {
-      background: none;
-      border: none;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      padding: 0;
-      border-radius: 4px; /* Optional visual tweak */
+    .presets-row label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
     }
 
     .presets {
@@ -295,58 +312,69 @@ const PRESETS: Record<string, string[]> = {
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .element-inputs {
+    .layer-header {
       display: flex;
-      gap: 1rem;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 1rem;
     }
 
-    .element-inputs input[type="text"] {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 0.5rem;
-      padding: 0.5rem 1rem;
-      color: white;
-      font-size: 1rem;
+    .layer-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      font-size: 0.9rem;
     }
 
-    .sliders-grid {
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    .layer-controls {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 1rem;
-      margin-bottom: 1rem;
+      align-items: end;
     }
 
-    .slider-control {
+    .control-item {
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
     }
     
-    .slider-control label {
+    .control-item label {
       font-size: 0.75rem;
       opacity: 0.7;
+      white-space: nowrap;
+    }
+
+    input[type="color"] {
+      background: none;
+      border: none;
+      width: 100%;
+      height: 30px;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 4px; 
     }
 
     .remove-btn {
-      width: 100%;
       background: rgba(255, 107, 107, 0.1);
       border-color: rgba(255, 107, 107, 0.3);
       color: #ff6b6b;
-      font-size: 0.8rem;
-      padding: 0.3rem;
-    }
-    
-    @media (max-width: 768px) {
-      .controls-grid, .sliders-grid {
-        grid-template-columns: 1fr;
-      }
+      font-size: 0.75rem;
+      padding: 0.3rem 0.8rem;
+      width: auto;
     }
   `]
 })
 export class App {
-  colors = signal<string[]>(PRESETS['northern-lights']);
+  auroraLayers = signal<AuroraLayer[]>(structuredClone(DEFAULT_LAYERS));
   auraSize = signal<number>(200);
   auraSpeed = signal<number>(15);
   
@@ -354,62 +382,36 @@ export class App {
   auraSpeedString = computed(() => `${this.auraSpeed()}s`);
   presetKeys = Object.keys(PRESETS);
 
-  glowElements = signal<GlowElement[]>([
-    {
-      id: 1,
-      text: 'Aura',
-      fontSize: 8,
-      color: '#ff6b6b',
-      intensity: 1,
-      distance: 4,
-      speed: 0
-    },
-    {
-      id: 2,
-      text: 'an experiment in animating color',
-      fontSize: 1.5,
-      color: '#7a5fff',
-      intensity: 0.5,
-      distance: 2,
-      speed: 0
+  heroShadow = computed(() => {
+    const layers = this.auroraLayers();
+    if (layers.length >= 2) {
+        return `0 0 1ch ${layers[2]?.color || layers[0].color}, 0 0 4ch ${layers[1].color}`;
+    } else if (layers.length === 1) {
+        return `0 0 2ch ${layers[0].color}`;
     }
-  ]);
-
-  updateColor(index: number, newColor: string) {
-    this.colors.update(c => {
-      const newC = [...c];
-      newC[index] = newColor;
-      return newC;
-    });
-  }
+    return 'none';
+  });
 
   loadPreset(name: string) {
     if (PRESETS[name]) {
-      this.colors.set([...PRESETS[name]]);
+      this.auroraLayers.set(structuredClone(PRESETS[name]));
     }
   }
 
-  addElement() {
-    const newId = Math.max(...this.glowElements().map(e => e.id), 0) + 1;
-    this.glowElements.update(els => [
-      ...els,
-      {
-        id: newId,
-        text: 'New Glow',
-        fontSize: 3,
-        color: '#7efff5',
-        intensity: 1,
-        distance: 2,
-        speed: 0
+  addLayer() {
+    this.auroraLayers.update(layers => [
+      ...layers,
+      { 
+        color: '#ffffff', 
+        x: 50, 
+        y: 50, 
+        spread: 50, 
+        opacity: 0.5 
       }
     ]);
   }
 
-  removeElement(id: number) {
-    this.glowElements.update(els => els.filter(e => e.id !== id));
-  }
-
-  generateTextShadow(el: GlowElement): string {
-    return `0 0 ${el.intensity}ch ${el.color}, 0 0 ${el.distance}ch ${el.color}`;
+  removeLayer(index: number) {
+    this.auroraLayers.update(layers => layers.filter((_, i) => i !== index));
   }
 }

@@ -1,36 +1,9 @@
 .aurora {
-  --aura-1: var(--color-1, #7efff5);
-  --aura-2: var(--color-2, #7a5fff);
-  --aura-3: var(--color-3, #ff6b6b);
-  --aura-4: var(--color-4, #181818);
-
   display: block;
   min-height: 100vh;
   background: #181818;
   color: white;
-  text-shadow: 0 0 1ch var(--color-3), 0 0 4ch var(--color-2);
-  animation: aura var(--aura-speed, 15s) linear infinite;
+  animation: aura-dynamic var(--aura-speed, 15s) linear infinite;
   background-size: var(--aura-size, 200%) var(--aura-size, 200%);
-  background-image:
-    radial-gradient(transparent 0, transparent 20%),
-    radial-gradient(at 62% 9%, var(--aura-1) 0px, transparent 50%),
-    radial-gradient(at 69% 60%, var(--aura-2) 0px, transparent 50%),
-    radial-gradient(at 24% 89%, var(--aura-3) 0px, transparent 50%),
-    radial-gradient(at 51% 77%, var(--aura-4) 0px, transparent 50%),
-    radial-gradient(at 78% 92%, var(--aura-1) 0px, transparent 50%);
-}
-
-@keyframes aura {
-  0% {
-    background-position: center, 50% 50%, 30% 100%, 100% 10%, 23% 23%, 0% 80%;
-  }
-  33.333% {
-    background-position: center, 10% 75%, 40% 80%, 60% 20%, 43% 23%, 16% 30%;
-  }
-  66.666% {
-    background-position: center, 25% 35%, 80% 50%, 10% 10%, 66% 5%, 30% 0%;
-  }
-  100% {
-    background-position: center, 50% 50%, 30% 100%, 100% 10%, 23% 23%, 0% 80%;
-  }
+  /* background-image is set via style binding in component */
 }
