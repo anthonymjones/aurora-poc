@@ -68,7 +68,7 @@ const PRESETS: Record<string, AuroraLayer[]> = {
               
               <div class="input-row">
                 <label>Speed ({{ auraSpeed() }}s)</label>
-                <input type="range" min="5" max="60" step="1" 
+                <input type="range" min="3" max="30" step="1" 
                   [ngModel]="auraSpeed()" 
                   (ngModelChange)="auraSpeed.set($event)"
                 >
@@ -76,7 +76,7 @@ const PRESETS: Record<string, AuroraLayer[]> = {
 
               <div class="input-row">
                 <label>Size ({{ auraSize() }}%)</label>
-                <input type="range" min="100" max="400" step="10" 
+                <input type="range" min="50" max="300" step="10" 
                   [ngModel]="auraSize()" 
                   (ngModelChange)="auraSize.set($event)"
                 >
@@ -411,8 +411,8 @@ const PRESETS: Record<string, AuroraLayer[]> = {
 })
 export class App {
   auroraLayers = signal<AuroraLayer[]>(structuredClone(DEFAULT_LAYERS));
-  auraSize = signal<number>(200);
-  auraSpeed = signal<number>(15);
+  auraSize = signal<number>(100);
+  auraSpeed = signal<number>(10);
   activePreset = signal<string | null>('northern-lights');
   
   auraSizeString = computed(() => `${this.auraSize()}%`);
